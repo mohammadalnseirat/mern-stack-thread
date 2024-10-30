@@ -3,15 +3,28 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectToDataBase from "./config/connectToDataBase.js";
 dotenv.config();
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
-app.use(cors({
+app.use(
+  cors({
     origin: "http://localhost:5173",
-    credentials: true
-}))
+    credentials: true,
+  })
+);
 
 app.listen(PORT, () => {
-    connectToDataBase()
+  connectToDataBase();
   console.log(`server running on port ${PORT}`);
+});
+
+// *MiddleWare To handle Errors:
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(statusCode).json({
+    success: false,
+    message,
+    statusCode,
+  });
 });
