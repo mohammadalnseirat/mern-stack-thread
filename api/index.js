@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectToDataBase from "./config/connectToDataBase.js";
+import userRoutes from "./routes/user.route.js";
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -12,7 +13,8 @@ app.use(
     credentials: true,
   })
 );
-
+// ! Routes here:
+app.use("/api/v1/users", userRoutes);
 app.listen(PORT, () => {
   connectToDataBase();
   console.log(`server running on port ${PORT}`);
