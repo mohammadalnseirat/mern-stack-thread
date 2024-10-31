@@ -2,6 +2,7 @@ import { handleError } from "../utils/error.js";
 import User from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
 import { generateTokenAndSetCookie } from "../lib/generateTokenAndSetCookie.js";
+import cloudinary from "../config/cloudinary.js";
 
 //! 1-Function To Sign up User:
 export const signUpUser = async (req, res, next) => {
@@ -136,6 +137,69 @@ export const followUnFollowUser = async (req, res, next) => {
     }
   } catch (error) {
     console.log("Error while following or unfollowing user", error.message);
+    next(error);
+  }
+};
+
+// ! 5-Function To Update User Profile:
+export const updateProfilePut = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, email, username, bio, password } = req.body;
+    let { profilPicture } = req.body;
+    const userId = req.user._id;
+    let user = await User.findById(userId);
+    if (!user) {
+      return next(handleError(404, "User not found"));
+    }
+    if (id.toString() !== userId.toString()) {
+      return next(handleError(401, "Unauthorized to update this user"));
+    }
+    //update the password
+    if (password) {
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
+      if (!passwordRegex.test(password)) {
+        return next(
+          handleError(
+            400,
+            "Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters"
+          )
+        );
+      }
+      const salt = bcryptjs.genSaltSync(10);
+      const hashedPassword = bcryptjs.hashSync(password, salt);
+      user.password = hashedPassword;
+    }
+    // update profile picture:
+    if (profilPicture) {
+      if (user.profilePicture) {
+        //?remove the old picture:
+        await cloudinary.uploader.destroy(
+          user.profilePicture.split("/").pop().split(".")[0]
+        );
+      }
+      // ?upload the new picture:
+      const uploadedReponsePicture = await cloudinary.uploader.upload(
+        profilPicture
+      );
+      profilPicture = uploadedReponsePicture.secure_url;
+    }
+    user.name = name || user.name;
+    user.username = username || user.username;
+    user.email = email || user.email;
+    user.bio = bio || user.bio;
+    user.profilePicture = profilPicture || user.profilePicture;
+
+    // *save the user:
+    user = await user.save();
+    // TODO: Update All replies Inside Posts:
+
+    //!password should be null in response:
+    user.password = null;
+    res.status(200).json(user);
+  } catch (error) {
+    console.log("Error while updating user profile", error.message);
     next(error);
   }
 };
