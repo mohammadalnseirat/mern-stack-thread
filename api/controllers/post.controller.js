@@ -50,3 +50,20 @@ export const createPost = async (req, res, next) => {
     next(error);
   }
 };
+
+//! 2-Function To get post:
+export const getPost = async(req,res,next)=>{
+  try {
+    const {id:postId} = req.params
+    const post = await Post.findById(postId)
+    if(!post){
+      return next(handleError(404,"Post not found"))
+    }
+
+    // send the response back:
+    res.status(200).json(post)
+  } catch (error) {
+    console.log('Error getting post', error.message);
+    next(error);
+  }
+}
