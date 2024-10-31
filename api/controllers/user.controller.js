@@ -1,7 +1,7 @@
 import { handleError } from "../utils/error.js";
 import User from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
-import {generateTokenAndSetCookie }from "../lib/generateTokenAndSetCookie.js";
+import { generateTokenAndSetCookie } from "../lib/generateTokenAndSetCookie.js";
 
 //! 1-Function To Sign up User:
 export const signUpUser = async (req, res, next) => {
@@ -70,6 +70,25 @@ export const signUpUser = async (req, res, next) => {
 //! 2-Function To Sign In User:
 export const signInUser = async (req, res, next) => {
   try {
+    const { username, password } = req.body;
+    if (!username || !password || username === "" || password === "") {
+      return next(handleError(400, "All fields are required"));
+    }
+    const user = await User.findOne({ username });
+    if (!user) {
+      return next(handleError(404, "Invalid Username or Password"));
+    }
+    const isMatchPassword = bcryptjs.compareSync(
+      password,
+      user?.password || ""
+    );
+    if (!isMatchPassword) {
+      return next(handleError(401, "Invalid Username or Password"));
+    }
+    // ?genterate the token:
+    generateTokenAndSetCookie(user._id, res);
+    const { password: pass, ...rest } = user._doc;
+    res.status(200).json(rest);
   } catch (error) {
     console.log("Error while signing in user", error.message);
     next(error);
