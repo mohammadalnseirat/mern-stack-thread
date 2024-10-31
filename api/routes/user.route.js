@@ -1,6 +1,7 @@
 import express from "express";
 import {
   followUnFollowUser,
+  getUserProfile,
   logoutUser,
   signInUser,
   signUpUser,
@@ -9,7 +10,7 @@ import {
 import protectedRoute from "../middleWare/protectedRoute.js";
 
 const router = express.Router();
-
+router.get("/profile/:query", getUserProfile);
 router.post("/sign-up", signUpUser);
 router.post("/sign-in", signInUser);
 router.post("/log-out", logoutUser);

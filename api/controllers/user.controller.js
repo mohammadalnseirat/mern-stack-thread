@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
 import { generateTokenAndSetCookie } from "../lib/generateTokenAndSetCookie.js";
 import cloudinary from "../config/cloudinary.js";
+import mongoose from "mongoose";
 
 //! 1-Function To Sign up User:
 export const signUpUser = async (req, res, next) => {
@@ -200,6 +201,34 @@ export const updateProfilePut = async (req, res, next) => {
     res.status(200).json(user);
   } catch (error) {
     console.log("Error while updating user profile", error.message);
+    next(error);
+  }
+};
+
+// ! 6-Function To Get User Profile:
+export const getUserProfile = async (req, res, next) => {
+  try {
+    //! We will fetch user profile either with username or userId
+    //! query is either username or userId
+    const { query } = req.params; //* query is either username or userId
+    let user;
+    if (mongoose.Types.ObjectId.isValid(query)) {
+      // ?query is userId
+      user = await User.findOne({ _id: query })
+        .select("-password")
+        .select("-updatedAt");
+    } else {
+      // ?query is username
+      user = await User.findOne({ username: query })
+        .select("-password")
+        .select("-updatedAt");
+    }
+    if (!user) {
+      return next(handleError(404, "User not found"));
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.log("Error while getting user profile", error.message);
     next(error);
   }
 };
