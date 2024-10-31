@@ -11,7 +11,6 @@ export const createPost = async (req, res, next) => {
     if (!postedBy || !text) {
       return next(handleError(401, "All fields are required"));
     }
-
     // ?Find the user based on the postedBy
     const user = await User.findById(postedBy);
     if (!user) {
@@ -52,18 +51,48 @@ export const createPost = async (req, res, next) => {
 };
 
 //! 2-Function To get post:
-export const getPost = async(req,res,next)=>{
+export const getPost = async (req, res, next) => {
   try {
-    const {id:postId} = req.params
-    const post = await Post.findById(postId)
-    if(!post){
-      return next(handleError(404,"Post not found"))
+    const { id: postId } = req.params;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(handleError(404, "Post not found"));
     }
-
     // send the response back:
-    res.status(200).json(post)
+    res.status(200).json(post);
   } catch (error) {
-    console.log('Error getting post', error.message);
+    console.log("Error getting post", error.message);
     next(error);
   }
-}
+};
+
+// ! 3-Function To delete post:
+export const deletePost = async (req, res, next) => {
+  try {
+    const { id: postId } = req.params;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(handleError(404, "Post not found"));
+    }
+    //* check the owner of the post(allowed to delete post):
+    if (post.postedBy.toString() !== req.user._id.toString()) {
+      return next(
+        handleError(
+          401,
+          "Unauthorized- You are not allowed to delete this post"
+        )
+      );
+    }
+    //! Delete the image from cloudinary:
+    if (post.image) {
+      const puplicImageId = post.image.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(puplicImageId);
+    }
+    // ?Delete the post:
+    await Post.findByIdAndDelete(postId);
+    res.status(200).json({ message: "Post deleted successfully" });
+  } catch (error) {
+    console.log("Error deleting post", error.message);
+    next(error);
+  }
+};
