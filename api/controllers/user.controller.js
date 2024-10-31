@@ -1,9 +1,66 @@
 import { handleError } from "../utils/error.js";
 import User from "../models/user.model.js";
+import bcryptjs from "bcryptjs";
+import {generateTokenAndSetCookie }from "../lib/generateTokenAndSetCookie.js";
 
 //! 1-Function To Sign up User:
 export const signUpUser = async (req, res, next) => {
   try {
+    //* get the data from rhe body:
+    const { name, username, email, password } = req.body;
+    if (
+      !name ||
+      !username ||
+      !email ||
+      !password ||
+      name === "" ||
+      username === "" ||
+      email === "" ||
+      password === ""
+    ) {
+      return next(handleError(400, "All fields are required"));
+    }
+    // *Check The Email:
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(email)) {
+      return next(handleError(400, "Invalid email"));
+    }
+    // ? check if the user already exists:
+    const existsUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existsUser) {
+      return next(handleError(400, "User already exists"));
+    }
+    // !Check if the password is strong:
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
+    if (!passwordRegex.test(password)) {
+      return next(
+        handleError(
+          400,
+          "Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters"
+        )
+      );
+    }
+    // *hash the password:
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+    // *create the newUser:
+    const newUser = new User({
+      name,
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    // *save the newUser:(and generate the token)
+    if (newUser) {
+      generateTokenAndSetCookie(newUser._id, res);
+      await newUser.save();
+      // ?Remove the password from the respones:
+      const { password, ...rest } = newUser._doc;
+      res.status(201).json(rest);
+    } else {
+      return next(handleError(400, "Invalid User Data!"));
+    }
   } catch (error) {
     console.log("Error while signing up user", error.message);
     next(error);
