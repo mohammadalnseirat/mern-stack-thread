@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectToDataBase from "./config/connectToDataBase.js";
 import userRoutes from "./routes/user.route.js";
+import postRoutes from "./routes/post.route.js";
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -17,6 +18,7 @@ app.use(
 );
 // ! Routes here:
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/posts", postRoutes);
 app.listen(PORT, () => {
   connectToDataBase();
   console.log(`server running on port ${PORT}`);
