@@ -96,3 +96,30 @@ export const deletePost = async (req, res, next) => {
     next(error);
   }
 };
+
+// ! 4-Function To like or unlike post:
+export const likeUnlike_Post = async (req, res, next) => {
+  try {
+    const { id: postId } = req.params;
+    const userId = req.user._id;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(handleError(404, "Post not found"));
+    }
+    //* check if the user has already liked or unliked the post:
+    const isLikedPost = post.likes.includes(userId.toString());
+    if (isLikedPost) {
+      //? unlike the post:
+      await Post.updateOne({ _id: postId }, { $pull: { likes: userId } });
+      res.status(200).json({ message: "User unliked Post successfully" });
+    } else {
+      //? like the post:
+      await Post.updateOne({ _id: postId }, { $push: { likes: userId } });
+      await post.save();
+      res.status(200).json({ message: "User liked Post successfully" });
+    }
+  } catch (error) {
+    console.log("Error liking or unliking post", error.message);
+    next(error);
+  }
+};
