@@ -98,10 +98,44 @@ export const signInUser = async (req, res, next) => {
 //! 3-Function To Sign Out User:
 export const logoutUser = async (req, res, next) => {
   try {
-    res.clearCookie('jwt_token')
-    res.status(200).json({message:'User logged out successfully'})
+    res.clearCookie("jwt_token");
+    res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
     console.log("Error while logging out user", error.message);
+    next(error);
+  }
+};
+
+//! 4-Function To Follow UnFollow User:
+export const followUnFollowUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    // ?Find The User To Be Followed:
+    const userToFollow = await User.findById(id);
+    // !Find The Current User:
+    const currentUser = await User.findById(req.user._id);
+    if (id.toString() === req.user._id.toString()) {
+      return next(handleError(400, "You can't follow yourself"));
+    }
+    if (!userToFollow || !currentUser) {
+      return next(handleError(400, "User not found"));
+    }
+    //?Check if the userToFollow is already followed by cureent user:
+    const isFollwed = currentUser.following.includes(id);
+    if (isFollwed) {
+      // *If Yes, unFollow the user:
+      // ! Modify currentUser Following Array , Modify userToFollow Followers Array:
+      await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } }); // updtate the followers array to userToFollow.
+      await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } }); // update the following array to the currentUser
+      res.status(200).json({ message: "User UnFollowed Successfully" });
+    } else {
+      // *If No, follow the user:
+      await User.findByIdAndUpdate(req.user._id, { $push: { following: id } }); // update the followimg array to the currentUser.
+      await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } }); // update the followers array to userToFollow.
+      res.status(200).json({ message: "User Followed Successfully" });
+    }
+  } catch (error) {
+    console.log("Error while following or unfollowing user", error.message);
     next(error);
   }
 };
