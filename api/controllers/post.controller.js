@@ -123,3 +123,39 @@ export const likeUnlike_Post = async (req, res, next) => {
     next(error);
   }
 };
+
+// ! 5-Function To reply to a post:
+export const replyOnPost = async (req, res, next) => {
+  try {
+    const { id: postId } = req.params;
+    const userId = req.user._id;
+    const userProfilePicture = req.user.profilePicture;
+    const username = req.user.username;
+    const { text } = req.body;
+    if (!text || text === "") {
+      return next(handleError(401, "Text is required"));
+    }
+    // !Find the post :
+    const post = await Post.findById(postId);
+    if (!post) {
+      return next(handleError(404, "Post not found"));
+    }
+    // *Create Reply:
+    const reply = {
+      userId,
+      userProfilePicture,
+      username,
+      text,
+    };
+    // ?Push the reply to the post:
+    post.replies.push(reply);
+    await post.save();
+    res.status(200).json({
+      message: "Reply added successfully",
+      post,
+    });
+  } catch (error) {
+    console.log("Error reply on post", error.message);
+    next(error);
+  }
+};

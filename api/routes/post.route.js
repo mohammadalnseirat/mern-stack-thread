@@ -5,11 +5,13 @@ import {
   getPost,
   deletePost,
   likeUnlike_Post,
+  replyOnPost,
 } from "../controllers/post.controller.js";
 
 const router = express.Router();
 router.get("/:id", getPost);
 router.post("/create", protectedRoute, createPost);
 router.post("/likeUnlike/:id", protectedRoute, likeUnlike_Post); //likeUnlike posted
+router.post("/reply/:id", protectedRoute, replyOnPost);
 router.delete("/delete/:id", protectedRoute, deletePost);
 export default router;
