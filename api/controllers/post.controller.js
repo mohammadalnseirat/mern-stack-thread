@@ -159,3 +159,32 @@ export const replyOnPost = async (req, res, next) => {
     next(error);
   }
 };
+
+// ! 6-Function To get feed posts:
+export const getFeedPosts = async (req, res, next) => {
+  try {
+    const userId = req.user._id.toString();
+    // ?Find the current user:
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(handleError(404, "User not found"));
+    }
+    // !Get The Following Users That Current User Follows:
+    const usersFollowing = user.following;
+
+    console.log("Following", usersFollowing);
+    //?Find all posts that the current user's following users have posted:
+    const feedPosts = await Post.find({
+      postedBy: { $in: usersFollowing },
+    }).sort({
+      createdAt: -1,
+    });
+    res.status(200).json(feedPosts);
+  } catch (error) {
+    console.log("Error getting feed posts", error.message);
+    next(error);
+  }
+};
+
+// ?In this route we will find the cuurenUser Based on the middleware then we will get all the users that currentUser
+// ?is following then we will get all the posts based on the postedBy field in the postModel and finally we will send the response back
